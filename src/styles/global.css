@@ -1,157 +1,139 @@
 /* Add these styles to your global.css file */
 
-/* Modern Header Styles */
-.header {
+/* Modern, sleek header styles */
+.app-header {
   background-color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  padding: 0.8rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   position: sticky;
   top: 0;
   z-index: 100;
+  padding: 16px 0;
 }
 
-.header-container {
+.header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.logo-container {
+.logo {
   display: flex;
   align-items: center;
 }
 
-.site-title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
+.logo-text {
   display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+  align-items: center;
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
-@media (min-width: 768px) {
-  .site-title {
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-}
-
-.title-primary {
-  color: #0090d4; /* ahdb Blue */
+.logo-primary {
+  color: #0090d4; /* AHDB Blue */
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
-.title-secondary {
-  color: #1f4350; /* credible */
+.logo-divider {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background-color: #e2e8f0;
+  margin: 0 12px;
 }
 
-.nav-list {
+.logo-secondary {
+  color: #1f4350; /* Credible */
+  font-size: 1.3rem;
+}
+
+.main-navigation {
+  display: flex;
+  align-items: center;
+}
+
+.nav-menu {
   display: flex;
   list-style: none;
   margin: 0;
   padding: 0;
-  gap: 0.5rem;
-}
-
-@media (min-width: 768px) {
-  .nav-list {
-    gap: 1.5rem;
-  }
+  gap: 8px;
 }
 
 .nav-item {
-  margin: 0;
-}
-
-.nav-link {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: #575756; /* ahdbText */
-  font-weight: 500;
-  padding: 0.5rem;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-@media (min-width: 768px) {
-  .nav-link {
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-}
-
-.nav-link:hover, .nav-link:focus {
-  background-color: rgba(0, 144, 212, 0.08); /* ahdbBlue with opacity */
-  color: #0090d4; /* ahdbBlue */
-}
-
-.nav-link-active {
-  background-color: rgba(0, 144, 212, 0.12); /* ahdbBlue with opacity */
-  color: #0090d4; /* ahdbBlue */
   position: relative;
 }
 
-.nav-link-active::after {
+.nav-link {
+  display: block;
+  padding: 8px 16px;
+  color: #575756; /* AHDB Text */
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: rgba(0, 144, 212, 0.05);
+  color: #0090d4; /* AHDB Blue */
+}
+
+.nav-item.active .nav-link {
+  color: #0090d4; /* AHDB Blue */
+  background-color: rgba(0, 144, 212, 0.1);
+}
+
+.nav-item.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
+  bottom: -4px;
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
+  width: 16px;
   height: 3px;
-  background-color: #0090d4; /* ahdbBlue */
-  border-radius: 3px;
+  background-color: #0090d4; /* AHDB Blue */
+  border-radius: 2px;
 }
 
-.nav-icon {
-  font-size: 1.25rem;
-}
-
-/* Footer Styles */
-.footer {
-  background-color: #1f4350; /* credible */
+/* Footer styles */
+.app-footer {
+  background-color: #1f4350; /* Credible */
   color: white;
-  padding: 2rem 0 1.5rem;
-  margin-top: 2rem;
+  padding: 24px 0;
+  margin-top: 40px;
 }
 
-.footer-content {
+.copyright {
   text-align: center;
   font-size: 0.9rem;
+  opacity: 0.9;
 }
 
-/* Container - if not already defined */
+/* Base container */
 .container {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 24px;
 }
 
-/* Ensure text contrast for WCAG compliance */
-:root {
-  /* Ensure high contrast for text on various backgrounds */
-  --text-on-white: #575756;
-  --text-on-dark: #ffffff;
-  --focus-outline: #0090d4;
-}
-
-/* Focus styles for accessibility */
-a:focus, button:focus {
-  outline: 2px solid var(--focus-outline);
-  outline-offset: 2px;
-}
-
-/* Reduced motion preference for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
+/* Responsive design */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .nav-menu {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .nav-link {
+    padding: 8px 12px;
+    font-size: 0.9rem;
   }
 }
