@@ -1,69 +1,85 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from '@react-google-maps/api';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
-import sampleLocations from '../data/locations'; // Temporary - replace with API call
+import sampleLocations from '../data/locations';
 
-// Map container style
-const containerStyle = {
-  width: '100%',
-  height: '70vh'
+// Fix Leaflet icon issues
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+// Custom icons for different species
+const createCustomIcon = (color) => {
+  return L.divIcon({
+    className: 'custom-icon',
+    html: `<div style="
+      background-color: ${color};
+      width: 24px;
+      height: 24px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      border: 2px solid white;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    "></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 24],
+    popupAnchor: [0, -24]
+  });
 };
 
-// UK center point (approximate)
-const defaultCenter = {
-  lat: 54.7023545,
-  lng: -3.2765753
-};
+// AHDB Colors
+const ahdbBlue = "#0090d4";
+const ahdbGreen = "#6da32f";
+const ahdbText = "#575756";
+const credible = "#1f4350";
+const neutral = "#dfd5b4";
+const balance = "#9db7c2";
+const solid = "#7b3010";
+const confident = "#ed7013";
 
-// Map options
-const mapOptions = {
-  disableDefaultUI: false,
-  zoomControl: true,
-  mapTypeControl: true,
-  streetViewControl: false,
-  fullscreenControl: true
-};
+// UK center point
+const defaultCenter = [54.7023545, -3.2765753];
+
+// Map Filter Control Component
+function MapController({ filteredLocations, center }) {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (filteredLocations && filteredLocations.length > 0) {
+      // Create bounds including all markers
+      const bounds = L.latLngBounds(filteredLocations.map(location => [location.lat, location.lng]));
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else {
+      // Reset to default view if no markers
+      map.setView(center, 6);
+    }
+  }, [filteredLocations, map, center]);
+  
+  return null;
+}
 
 const Map = () => {
-  // eslint-disable-next-line no-unused-vars
-  const [map, setMap] = useState(null);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedMarker, setSelectedMarker] = useState(null);
   const [activeFilters, setActiveFilters] = useState({
     species: [],
     regions: []
-  });
-  // eslint-disable-next-line no-unused-vars
-  const [mapCenter, setMapCenter] = useState(defaultCenter);
-  // eslint-disable-next-line no-unused-vars
-  const [mapZoom, setMapZoom] = useState(6);
-
-  // Load Google Maps API
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: process.env.REACT_APP_GOOGLE_MAPS_API_KEY,
-    // You can include additional libraries if needed
-    // libraries: ['places']
   });
 
   // Fetch locations data
   useEffect(() => {
     // In a real app, fetch from API
-    // Example:
-    // const fetchLocations = async () => {
-    //   try {
-    //     const response = await fetch('https://api.ahdb.org.uk/efoodchainmap');
-    //     const data = await response.json();
-    //     setLocations(data);
-    //   } catch (error) {
-    //     console.error('Error fetching locations:', error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchLocations();
-
     // Using sample data for now
     setLocations(sampleLocations);
     setLoading(false);
@@ -86,26 +102,6 @@ const Map = () => {
     });
   }, [locations, activeFilters]);
 
-  // Handle map load
-  const onMapLoad = useCallback((map) => {
-    setMap(map);
-  }, []);
-
-  // Handle map unload
-  const onMapUnmount = useCallback(() => {
-    setMap(null);
-  }, []);
-
-  // Handle marker click
-  const handleMarkerClick = (location) => {
-    setSelectedMarker(location);
-  };
-
-  // Handle info window close
-  const handleInfoWindowClose = () => {
-    setSelectedMarker(null);
-  };
-
   // Handle filter change
   const handleFilterChange = (filterType, values) => {
     setActiveFilters(prev => ({
@@ -120,13 +116,24 @@ const Map = () => {
   // Get all available regions for filter
   const availableRegions = [...new Set(locations.map(location => location.region))];
 
-  // Handle map error
-  if (loadError) {
-    return <div className="map-error">Error loading maps</div>;
-  }
+  // Get icon for species
+  const getIconForSpecies = (species) => {
+    switch(species) {
+      case 'Cattle':
+        return createCustomIcon(ahdbGreen);
+      case 'Sheep':
+        return createCustomIcon(ahdbBlue);
+      case 'Pigs':
+        return createCustomIcon(confident);
+      case 'Poultry':
+        return createCustomIcon(solid);
+      default:
+        return createCustomIcon(ahdbText);
+    }
+  };
 
   // Show loading indicator
-  if (!isLoaded || loading) {
+  if (loading) {
     return <div className="loading">Loading map...</div>;
   }
 
@@ -152,75 +159,66 @@ const Map = () => {
         </div>
         
         <div className="map-wrapper">
-          <GoogleMap
-            mapContainerStyle={containerStyle}
-            center={mapCenter}
-            zoom={mapZoom}
-            options={mapOptions}
-            onLoad={onMapLoad}
-            onUnmount={onMapUnmount}
+          <MapContainer 
+            center={defaultCenter} 
+            zoom={6} 
+            style={{ height: '70vh', width: '100%' }}
+            zoomControl={true}
+            scrollWheelZoom={true}
           >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            
             {filteredLocations().map(location => (
               <Marker
                 key={location.id}
-                position={{ lat: location.lat, lng: location.lng }}
-                onClick={() => handleMarkerClick(location)}
-                icon={{
-                  path: "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z",
-                  fillColor: location.species === 'Cattle' ? '#6da32f' : 
-                             location.species === 'Sheep' ? '#0090d4' : 
-                             location.species === 'Pigs' ? '#ed7013' : 
-                             location.species === 'Poultry' ? '#7b3010' : 
-                             '#575756',
-                  fillOpacity: 1,
-                  strokeColor: '#FFFFFF',
-                  strokeWeight: 1,
-                  scale: 2,
-                  anchor: { x: 12, y: 22 },
-                }}
-              />
+                position={[location.lat, location.lng]}
+                icon={getIconForSpecies(location.species)}
+              >
+                <Popup>
+                  <div className="marker-info">
+                    <h3>{location.tradingName}</h3>
+                    <p><strong>Address:</strong> {location.address}</p>
+                    <p><strong>Species:</strong> {location.species}</p>
+                    <p><strong>App Number:</strong> {location.appNumber}</p>
+                    {location.additionalInfo && (
+                      <p>{location.additionalInfo}</p>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
             ))}
             
-            {selectedMarker && (
-              <InfoWindow
-                position={{ lat: selectedMarker.lat, lng: selectedMarker.lng }}
-                onCloseClick={handleInfoWindowClose}
-              >
-                <div className="marker-info">
-                  <h3>{selectedMarker.tradingName}</h3>
-                  <p><strong>Address:</strong> {selectedMarker.address}</p>
-                  <p><strong>Species:</strong> {selectedMarker.species}</p>
-                  <p><strong>App Number:</strong> {selectedMarker.appNumber}</p>
-                  {selectedMarker.additionalInfo && (
-                    <p>{selectedMarker.additionalInfo}</p>
-                  )}
-                </div>
-              </InfoWindow>
-            )}
-          </GoogleMap>
+            <MapController 
+              filteredLocations={filteredLocations()} 
+              center={defaultCenter} 
+            />
+          </MapContainer>
         </div>
         
         <div className="map-legend">
           <h3>Map Legend</h3>
           <div className="legend-items">
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#6da32f' }}></span>
+              <span className="legend-color" style={{ backgroundColor: ahdbGreen }}></span>
               <span>Cattle</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#0090d4' }}></span>
+              <span className="legend-color" style={{ backgroundColor: ahdbBlue }}></span>
               <span>Sheep</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#ed7013' }}></span>
+              <span className="legend-color" style={{ backgroundColor: confident }}></span>
               <span>Pigs</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#7b3010' }}></span>
+              <span className="legend-color" style={{ backgroundColor: solid }}></span>
               <span>Poultry</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: '#575756' }}></span>
+              <span className="legend-color" style={{ backgroundColor: ahdbText }}></span>
               <span>Other</span>
             </div>
           </div>
