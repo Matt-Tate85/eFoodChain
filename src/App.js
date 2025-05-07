@@ -33,7 +33,8 @@ const App = () => {
         {/* Introduction Banner */}
         <div className="p-4 mb-6 rounded-md border-l-4 bg-gray-100" style={{ borderLeftColor: colors.secondary }}>
           <p className="mb-2" style={{ color: colors.textMedium }}>
-            Interactive map showing food chain locations across the UK. Filter by species and region to find relevant locations.
+            This interactive map provides details of the red meat food chain. It shows key details of slaughterhouses and the species they process for England and Wales. Use the filters to narrow down by species or region.
+              Click on a marker to see detailed information about each location.
           </p>
         </div>
         
