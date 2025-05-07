@@ -1,6 +1,4 @@
 // Sample location data for development and testing
-// In production, this would be replaced with data from an API
-
 const sampleLocations = [
   {
     id: 1,
@@ -51,7 +49,7 @@ const sampleLocations = [
     tradingName: "Midlands Mixed Livestock",
     address: "Green Lane, Birmingham, B12 2SU",
     lat: 52.4773536,
-    lng: -1.89182'70',
+    lng: -1.8918270,
     appNumber: "UK56789",
     species: "Multiple",
     region: "West Midlands",
@@ -89,50 +87,6 @@ const sampleLocations = [
     species: "Poultry",
     region: "East of England",
     additionalInfo: "Broiler production"
-  },
-  {
-    id: 9,
-    tradingName: "Kent Pig Farms",
-    address: "Orchard Way, Canterbury, CT1 3XY",
-    lat: 51.2800275,
-    lng: 1.0802533,
-    appNumber: "UK90123",
-    species: "Pigs",
-    region: "South East",
-    additionalInfo: "Specialises in rare breeds"
-  },
-  {
-    id: 10,
-    tradingName: "Scottish Highland Cattle",
-    address: "Ben View, Aberdeen, AB10 1XG",
-    lat: 57.1482429,
-    lng: -2.0928096,
-    appNumber: "UK01234",
-    species: "Cattle",
-    region: "Scotland",
-    additionalInfo: "Highland beef producer"
-  },
-  {
-    id: 11,
-    tradingName: "Cornish Duck Farm",
-    address: "Riverside, Truro, Cornwall, TR1 1ZZ",
-    lat: 50.2632427,
-    lng: -5.0507533,
-    appNumber: "UK11223",
-    species: "Poultry",
-    region: "South West",
-    additionalInfo: "Speciality duck producer"
-  },
-  {
-    id: 12,
-    tradingName: "Northern Sheep Association",
-    address: "Hill Top Farm, Newcastle, NE1 7RU",
-    lat: 54.9738474,
-    lng: -1.6131572,
-    appNumber: "UK22334",
-    species: "Sheep",
-    region: "North East",
-    additionalInfo: "Cooperative of upland farmers"
   }
 ];
 
