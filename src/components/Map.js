@@ -26,6 +26,7 @@ const mapOptions = {
 };
 
 const Map = () => {
+  // eslint-disable-next-line no-unused-vars
   const [map, setMap] = useState(null);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +35,9 @@ const Map = () => {
     species: [],
     regions: []
   });
+  // eslint-disable-next-line no-unused-vars
   const [mapCenter, setMapCenter] = useState(defaultCenter);
+  // eslint-disable-next-line no-unused-vars
   const [mapZoom, setMapZoom] = useState(6);
 
   // Load Google Maps API
