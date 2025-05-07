@@ -1,5 +1,7 @@
 .map-container {
   padding: 1.5rem 0;
+  position: relative;
+  z-index: 1;
 }
 
 .map-container h2 {
@@ -12,6 +14,8 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1000;
 }
 
 .map-wrapper {
@@ -21,6 +25,12 @@
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   margin-bottom: 1.5rem;
+  position: relative;
+  z-index: 1 !important; /* Lower z-index than the filters */
+}
+
+.leaflet-container {
+  z-index: 0 !important;
 }
 
 .map-error {
@@ -122,6 +132,12 @@
 
 .leaflet-popup-content {
   margin: 10px;
+}
+
+/* Ensure leaflet controls appear above filters */
+.leaflet-top, 
+.leaflet-bottom {
+  z-index: 999 !important;
 }
 
 /* Responsive adjustments */
