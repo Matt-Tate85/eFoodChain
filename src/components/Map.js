@@ -140,7 +140,7 @@ const Map = () => {
   return (
     <div className="map-container">
       <div className="container">
-        <h2>AHDB Food Chain Map</h2>
+        <h2>AHDB eFoodchain Map</h2>
         
         <div className="map-filters">
           <LocationFilter 
