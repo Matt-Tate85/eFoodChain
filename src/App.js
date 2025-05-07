@@ -24,7 +24,7 @@ const App = () => {
       <header className="px-4 py-4 text-white" style={{ backgroundColor: colors.primary }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-2xl font-bold">AHDB eFoodChainMap</h1>
-          <img src="/api/placeholder/120/40" alt="AHDB Logo" className="h-10" />
+          <img src="https://projectblue.blob.core.windows.net/media/Default/Assets/AHDB_Facebook_Logo.png" alt="AHDB Logo" className="h-10" />
         </div>
       </header>
       
@@ -36,34 +36,6 @@ const App = () => {
           <p className="mb-2" style={{ color: colors.textMedium }}>
             Interactive map showing food chain locations across the UK. Filter by species and region to find relevant locations.
           </p>
-        </div>
-        
-        {/* Navigation Bar */}
-        <div className="border-b border-gray-200 mb-6">
-          <div className="flex space-x-2">
-            <a
-              href="/"
-              className="py-3 px-4 text-sm font-medium border-b-2"
-              style={{ 
-                color: colors.primary, 
-                borderBottomColor: colors.primary
-              }}
-            >
-              Map
-            </a>
-            <a
-              href="/about"
-              className="py-3 px-4 text-sm font-medium text-gray-500"
-            >
-              About
-            </a>
-            <a
-              href="/help"
-              className="py-3 px-4 text-sm font-medium text-gray-500"
-            >
-              Help
-            </a>
-          </div>
         </div>
         
         {/* Map Container */}
@@ -89,7 +61,7 @@ const App = () => {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
-              <img src="/api/placeholder/120/40" alt="AHDB Logo" className="h-8 mb-2" />
+              <img src="https://projectblue.blob.core.windows.net/media/Default/Assets/AHDB_Facebook_Logo.png" alt="AHDB Logo" className="h-8 mb-2" />
               <p className="text-xs opacity-80">© Agriculture and Horticulture Development Board {new Date().getFullYear()}</p>
             </div>
             <div className="text-sm">
