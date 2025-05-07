@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import '../styles/components/LocationFilter.css';
 
 const LocationFilter = ({ title, options, selectedValues, onChange }) => {
-  // Each filter component gets its own independent isOpen state
+  // Create a unique component ID for this specific filter instance
+  const [uniqueId] = useState(`filter-${Math.random().toString(36).substring(2, 9)}`);
   const [isOpen, setIsOpen] = useState(false);
 
   const toggleFilter = () => {
@@ -26,22 +27,22 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
   };
 
   return (
-    <div className="location-filter">
+    <div className="location-filter" id={uniqueId}>
       <div className="filter-header" onClick={toggleFilter}>
         <h3>{title}</h3>
         <span className={`filter-arrow ${isOpen ? 'open' : ''}`}>▼</span>
       </div>
       
-      {/* Only show this filter's options when THIS filter is open */}
       {isOpen && (
         <div className="filter-options">
           {options && options.length > 0 ? (
             <>
               {options.map(option => (
-                <div key={option} className="filter-option">
+                <div key={`${uniqueId}-${option}`} className="filter-option">
                   <label className="checkbox-container">
                     {option}
                     <input
+                      id={`${uniqueId}-${option}`}
                       type="checkbox"
                       checked={selectedValues.includes(option)}
                       onChange={() => handleOptionChange(option)}
@@ -52,7 +53,10 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
               ))}
               
               {selectedValues.length > 0 && (
-                <button className="clear-filter" onClick={clearFilter}>
+                <button className="clear-filter" onClick={(e) => {
+                  e.stopPropagation();
+                  clearFilter();
+                }}>
                   Clear {title.toLowerCase()}
                 </button>
               )}
