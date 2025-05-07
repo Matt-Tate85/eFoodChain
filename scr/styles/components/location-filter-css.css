@@ -1,0 +1,131 @@
+.location-filter {
+  background-color: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 300px;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--light-grey);
+}
+
+.filter-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--credible);
+}
+
+.filter-arrow {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+.filter-arrow.open {
+  transform: rotate(180deg);
+}
+
+.filter-options {
+  padding: 0.75rem 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.filter-option {
+  margin-bottom: 0.5rem;
+}
+
+/* Custom checkbox styles */
+.checkbox-container {
+  display: block;
+  position: relative;
+  padding-left: 30px;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
+}
+
+.checkbox-container input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.checkmark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 18px;
+  width: 18px;
+  background-color: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+
+.checkbox-container:hover input ~ .checkmark {
+  background-color: var(--light-grey);
+}
+
+.checkbox-container input:checked ~ .checkmark {
+  background-color: var(--ahdb-blue);
+  border-color: var(--ahdb-blue);
+}
+
+.checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+}
+
+.checkbox-container input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.checkbox-container .checkmark:after {
+  left: 6px;
+  top: 2px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.clear-filter {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  background-color: var(--light-grey);
+  color: var(--ahdb-text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.clear-filter:hover {
+  background-color: var(--border);
+  color: var(--credible);
+}
+
+.selected-filters {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  color: var(--ahdb-blue);
+  background-color: var(--light-grey);
+  border-radius: 0 0 8px 8px;
+}
+
+@media (max-width: 768px) {
+  .location-filter {
+    max-width: 100%;
+  }
+}
