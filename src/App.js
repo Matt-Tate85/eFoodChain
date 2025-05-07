@@ -2,20 +2,45 @@ import React from 'react';
 import './styles/global.css';
 import Map from './components/Map';
 
+// AHDB Colors - Access these from your global CSS if available
+const ahdbBlue = "#0090d4";
+const ahdbGreen = "#6da32f";
+const ahdbText = "#575756";
+const credible = "#1f4350";
+
 function App() {
   return (
     <div className="app">
-      {/* Header */}
+      {/* Modern Header */}
       <header className="header">
-        <div className="header-container">
-          <div className="logo">
-            <h1 style={{ color: '#0090d4' }}>AHDB eFoodChainMap</h1>
+        <div className="container header-container">
+          <div className="logo-container">
+            <h1 className="site-title">
+              <span className="title-primary">AHDB</span>
+              <span className="title-secondary">eFoodChainMap</span>
+            </h1>
           </div>
-          <nav className="main-nav">
-            <ul>
-              <li><a href="/">Map</a></li>
-              <li><a href="/about">About</a></li>
-              <li><a href="/help">Help</a></li>
+          
+          <nav className="main-nav" aria-label="Main navigation">
+            <ul className="nav-list">
+              <li className="nav-item">
+                <a href="/" className="nav-link nav-link-active">
+                  <span className="nav-icon">🗺️</span>
+                  <span className="nav-text">Map</span>
+                </a>
+              </li>
+              <li className="nav-item">
+                <a href="/about" className="nav-link">
+                  <span className="nav-icon">ℹ️</span>
+                  <span className="nav-text">About</span>
+                </a>
+              </li>
+              <li className="nav-item">
+                <a href="/help" className="nav-link">
+                  <span className="nav-icon">❓</span>
+                  <span className="nav-text">Help</span>
+                </a>
+              </li>
             </ul>
           </nav>
         </div>
@@ -27,14 +52,9 @@ function App() {
       </main>
 
       {/* Footer */}
-      <footer style={{ 
-        backgroundColor: '#1f4350', 
-        color: 'white', 
-        padding: '2rem 0 1rem',
-        marginTop: '2rem'
-      }}>
+      <footer className="footer">
         <div className="container">
-          <div style={{ textAlign: 'center' }}>
+          <div className="footer-content">
             <p>© {new Date().getFullYear()} Agriculture and Horticulture Development Board. All rights reserved.</p>
           </div>
         </div>
