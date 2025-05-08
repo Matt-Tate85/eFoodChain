@@ -1,227 +1,149 @@
-/* Tailwind-like utility classes for styling */
+/* Add these styles to your global.css file */
 
-/* Typography */
-.font-sans {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+/* Focus states for accessibility */
+a:focus, 
+button:focus, 
+input:focus, 
+select:focus, 
+textarea:focus {
+  outline: 2px solid #0090d4;
+  outline-offset: 2px;
 }
 
-.text-xs {
-  font-size: 0.75rem;
+/* Skip to content link for keyboard users */
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  z-index: 9999;
+  padding: 1em;
+  background-color: white;
+  color: #0090d4;
+  opacity: 0;
 }
 
-.text-sm {
-  font-size: 0.875rem;
+.skip-to-content:focus {
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 1;
 }
 
-.text-lg {
-  font-size: 1.125rem;
+/* Animation for spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
-.text-xl {
-  font-size: 1.25rem;
+.animate-spin {
+  animation: spin 1s linear infinite;
 }
 
-.text-2xl {
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  body.dark-mode-support {
+    background-color: #121212;
+    color: #f5f5f5;
+  }
+  
+  .dark-mode-support .bg-white {
+    background-color: #1e1e1e;
+  }
+  
+  .dark-mode-support .bg-gray-50 {
+    background-color: #121212;
+  }
+  
+  .dark-mode-support .bg-gray-100 {
+    background-color: #2a2a2a;
+  }
+  
+  .dark-mode-support .text-gray-500 {
+    color: #aaaaaa;
+  }
+  
+  .dark-mode-support footer {
+    background-color: #0a0a0a;
+  }
+}
+
+/* Additional responsive classes */
+.sm\:flex-row {
+  flex-direction: row;
+}
+
+.sm\:mb-0 {
+  margin-bottom: 0;
+}
+
+.sm\:text-2xl {
   font-size: 1.5rem;
 }
 
-.text-3xl {
-  font-size: 1.875rem;
+.sm\:h-10 {
+  height: 2.5rem;
 }
 
-.font-medium {
-  font-weight: 500;
+@media (min-width: 640px) {
+  .sm\:flex-row {
+    flex-direction: row;
+  }
+  
+  .sm\:mb-0 {
+    margin-bottom: 0;
+  }
+  
+  .sm\:text-2xl {
+    font-size: 1.5rem;
+  }
+  
+  .sm\:h-10 {
+    height: 2.5rem;
+  }
 }
 
-.font-semibold {
-  font-weight: 600;
+/* Utility classes */
+.inset-0 {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 
-.font-bold {
-  font-weight: 700;
+.absolute {
+  position: absolute;
 }
 
-/* Colors */
-.text-white {
-  color: white;
+.relative {
+  position: relative;
 }
 
-.text-gray-500 {
-  color: #6b7280;
+.z-50 {
+  z-index: 50;
 }
 
-.bg-white {
-  background-color: white;
+.bg-opacity-80 {
+  --bg-opacity: 0.8;
+  background-color: rgba(255, 255, 255, var(--bg-opacity));
 }
 
-.bg-gray-50 {
-  background-color: #f9fafb;
+.inline-block {
+  display: inline-block;
 }
 
-.bg-gray-100 {
-  background-color: #f3f4f6;
-}
-
-/* Layout */
-.min-h-screen {
-  min-height: 100vh;
+.w-8 {
+  width: 2rem;
 }
 
 .h-8 {
   height: 2rem;
 }
 
-.h-10 {
-  height: 2.5rem;
+.border-4 {
+  border-width: 4px;
 }
 
-.max-w-6xl {
-  max-width: 72rem;
+.border-t-4 {
+  border-top-width: 4px;
 }
 
-.mx-auto {
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.mt-2 {
-  margin-top: 0.5rem;
-}
-
-.mb-2 {
-  margin-bottom: 0.5rem;
-}
-
-.mt-4 {
-  margin-top: 1rem;
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.mt-6 {
-  margin-top: 1.5rem;
-}
-
-.mb-6 {
-  margin-bottom: 1.5rem;
-}
-
-.mt-10 {
-  margin-top: 2.5rem;
-}
-
-.p-4 {
-  padding: 1rem;
-}
-
-.p-6 {
-  padding: 1.5rem;
-}
-
-.px-4 {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-.py-3 {
-  padding-top: 0.75rem;
-  padding-bottom: 0.75rem;
-}
-
-.py-4 {
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-}
-
-.py-6 {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
-}
-
-.px-4 {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* Flexbox */
-.flex {
-  display: flex;
-}
-
-.flex-col {
-  flex-direction: column;
-}
-
-.items-center {
-  align-items: center;
-}
-
-.justify-between {
-  justify-content: space-between;
-}
-
-.space-x-2 > * + * {
-  margin-left: 0.5rem;
-}
-
-/* Borders */
-.border {
-  border-width: 1px;
-}
-
-.border-b {
-  border-bottom-width: 1px;
-}
-
-.border-b-2 {
-  border-bottom-width: 2px;
-}
-
-.border-l-4 {
-  border-left-width: 4px;
-}
-
-.border-gray-200 {
-  border-color: #e5e7eb;
-}
-
-.rounded-md {
-  border-radius: 0.375rem;
-}
-
-/* Effects */
-.shadow-sm {
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-}
-
-.opacity-80 {
-  opacity: 0.8;
-}
-
-/* Responsive */
-@media (min-width: 768px) {
-  .md\:flex-row {
-    flex-direction: row;
-  }
-  
-  .md\:mb-0 {
-    margin-bottom: 0;
-  }
-}
-
-/* Make sure map components stay on top */
-.map-filters {
-  position: relative;
-  z-index: 1000 !important;
-}
-
-.leaflet-container {
-  z-index: 0 !important;
-}
-
-.leaflet-top, 
-.leaflet-bottom {
-  z-index: 999 !important;
+.rounded-full {
+  border-radius: 9999px;
 }
