@@ -1,6 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../styles/components/LocationFilter.css';
 
+// AHDB Color Palette
+const colors = {
+  primary: "#0090d4",
+  secondary: "#6da32f",
+  textDark: "#1f4350",
+  textMedium: "#575756",
+  bgHighlight: "#dfd5b4",
+  bgSecondary: "#f5f5f5",
+  border: "#9db7c2",
+  success: "#025328",
+  warning: "#ed7013",
+  error: "#7b3010",
+  info: "#00abe4"
+};
+
 const LocationFilter = ({ title, options, selectedValues, onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -48,10 +63,26 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
         onClick={toggleFilter}
         aria-expanded={isOpen}
         aria-controls={`dropdown-${title.toLowerCase().replace(/\s+/g, '-')}`}
+        style={{ 
+          borderColor: isOpen ? colors.primary : colors.border,
+          boxShadow: isOpen ? `0 0 0 3px rgba(0, 144, 212, 0.15)` : 'none'
+        }}
       >
         <span className="filter-button-text">{title}</span>
-        <span className="filter-count">{selectedValues.length > 0 ? selectedValues.length : ''}</span>
-        <svg className="filter-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+        {selectedValues.length > 0 && (
+          <span className="filter-count" style={{ backgroundColor: colors.primary }}>
+            {selectedValues.length}
+          </span>
+        )}
+        <svg 
+          className="filter-arrow" 
+          width="12" 
+          height="8" 
+          viewBox="0 0 12 8" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+          style={{ color: isOpen ? colors.primary : colors.textMedium }}
+        >
           <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
@@ -63,7 +94,11 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
       >
         {selectedValues.length > 0 && (
           <div className="filter-actions">
-            <button className="clear-button" onClick={clearFilter}>
+            <button 
+              className="clear-button" 
+              onClick={clearFilter}
+              style={{ color: colors.primary }}
+            >
               Clear all
             </button>
           </div>
@@ -79,6 +114,19 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
                   onChange={() => handleOptionChange(option)}
                   className="filter-checkbox"
                 />
+                <span 
+                  className="custom-checkbox"
+                  style={{ 
+                    borderColor: selectedValues.includes(option) ? colors.primary : colors.border,
+                    backgroundColor: selectedValues.includes(option) ? colors.primary : 'white' 
+                  }}
+                >
+                  {selectedValues.includes(option) && (
+                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </span>
                 <span className="filter-label">{option}</span>
               </label>
             ))
@@ -87,12 +135,6 @@ const LocationFilter = ({ title, options, selectedValues, onChange }) => {
           )}
         </div>
       </div>
-      
-      {!isOpen && selectedValues.length > 0 && (
-        <div className="selected-summary">
-          {selectedValues.length} selected
-        </div>
-      )}
     </div>
   );
 };
