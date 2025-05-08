@@ -1,10 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
 import sampleLocations from '../data/locations';
+
+// AHDB Color Palette
+const colors = {
+  primary: "#0090d4",
+  secondary: "#6da32f",
+  textDark: "#1f4350",
+  textMedium: "#575756",
+  bgHighlight: "#dfd5b4",
+  bgSecondary: "#f5f5f5",
+  border: "#9db7c2",
+  success: "#025328",
+  warning: "#ed7013",
+  error: "#7b3010",
+  info: "#00abe4"
+};
 
 // Fix Leaflet icon issues
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -38,16 +53,6 @@ const createCustomIcon = (color) => {
   });
 };
 
-// AHDB Colors
-const ahdbBlue = "#0090d4";
-const ahdbGreen = "#6da32f";
-const ahdbText = "#575756";
-const credible = "#1f4350";
-const neutral = "#dfd5b4";
-const balance = "#9db7c2";
-const solid = "#7b3010";
-const confident = "#ed7013";
-
 // UK center point
 const defaultCenter = [54.7023545, -3.2765753];
 
@@ -69,20 +74,32 @@ function MapController({ filteredLocations, center }) {
   return null;
 }
 
-const Map = () => {
+const Map = ({ onMapLoaded }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilters, setActiveFilters] = useState({
     species: [],
     regions: []
   });
+  const mapRef = useRef(null);
+
+  // Handle on load callback
+  const handleMapLoaded = () => {
+    if (onMapLoaded) {
+      setTimeout(() => {
+        setLoading(false);
+        onMapLoaded();
+      }, 500); // Small delay to ensure map tiles are loaded
+    } else {
+      setLoading(false);
+    }
+  };
 
   // Fetch locations data
   useEffect(() => {
     // In a real app, fetch from API
     // Using sample data for now
     setLocations(sampleLocations);
-    setLoading(false);
   }, []);
 
   // Filter locations based on active filters
@@ -120,29 +137,33 @@ const Map = () => {
   const getIconForSpecies = (species) => {
     switch(species) {
       case 'Cattle':
-        return createCustomIcon(ahdbGreen);
+        return createCustomIcon(colors.secondary);
       case 'Sheep':
-        return createCustomIcon(ahdbBlue);
+        return createCustomIcon(colors.primary);
       case 'Pigs':
-        return createCustomIcon(confident);
+        return createCustomIcon(colors.warning);
       case 'Poultry':
-        return createCustomIcon(solid);
+        return createCustomIcon(colors.error);
       default:
-        return createCustomIcon(ahdbText);
+        return createCustomIcon(colors.textMedium);
     }
   };
 
-  // Show loading indicator
-  if (loading) {
-    return <div className="loading">Loading map...</div>;
-  }
-
   return (
     <div className="map-container">
-      <div className="container">
-        <h2>AHDB eFoodchain Map</h2>
+      <h2 className="section-title">AHDB eFoodChain Map</h2>
+      
+      <div className="filter-section">
+        <div className="filter-header">
+          <span className="filter-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M14.5 2H1.5L6.5 8.032V12.5L9.5 14V8.032L14.5 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </span>
+          <h3 className="filter-title">Filter Locations</h3>
+        </div>
         
-        <div className="map-filters">
+        <div className="filter-controls">
           <LocationFilter 
             title="Filter by Species"
             options={availableSpecies}
@@ -157,14 +178,26 @@ const Map = () => {
             onChange={(values) => handleFilterChange('regions', values)}
           />
         </div>
-        
+      </div>
+      
+      <div className="map-view-section">
         <div className="map-wrapper">
+          {loading && (
+            <div className="map-loading">
+              <div className="spinner"></div>
+              <p>Loading map...</p>
+            </div>
+          )}
+          
           <MapContainer 
+            ref={mapRef}
             center={defaultCenter} 
             zoom={6} 
-            style={{ height: '70vh', width: '100%' }}
+            style={{ height: '100%', width: '100%' }}
             zoomControl={true}
             scrollWheelZoom={true}
+            whenReady={handleMapLoaded}
+            className={loading ? 'map-loading-state' : ''}
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -177,14 +210,29 @@ const Map = () => {
                 position={[location.lat, location.lng]}
                 icon={getIconForSpecies(location.species)}
               >
-                <Popup>
+                <Popup className="custom-popup">
                   <div className="marker-info">
-                    <h3>{location.tradingName}</h3>
-                    <p><strong>Address:</strong> {location.address}</p>
-                    <p><strong>Species:</strong> {location.species}</p>
-                    <p><strong>App Number:</strong> {location.appNumber}</p>
+                    <h3 className="location-name">{location.tradingName}</h3>
+                    <div className="info-row">
+                      <span className="info-label">Address:</span>
+                      <span className="info-value">{location.address}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Species:</span>
+                      <span className="info-value">
+                        <span className="species-badge" style={{ backgroundColor: getSpeciesColor(location.species) }}>
+                          {location.species}
+                        </span>
+                      </span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">App Number:</span>
+                      <span className="info-value">{location.appNumber}</span>
+                    </div>
                     {location.additionalInfo && (
-                      <p>{location.additionalInfo}</p>
+                      <div className="additional-info">
+                        {location.additionalInfo}
+                      </div>
                     )}
                   </div>
                 </Popup>
@@ -199,27 +247,27 @@ const Map = () => {
         </div>
         
         <div className="map-legend">
-          <h3>Map Legend</h3>
+          <h3 className="legend-title">Map Legend</h3>
           <div className="legend-items">
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: ahdbGreen }}></span>
-              <span>Cattle</span>
+              <span className="legend-color" style={{ backgroundColor: colors.secondary }}></span>
+              <span className="legend-label">Cattle</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: ahdbBlue }}></span>
-              <span>Sheep</span>
+              <span className="legend-color" style={{ backgroundColor: colors.primary }}></span>
+              <span className="legend-label">Sheep</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: confident }}></span>
-              <span>Pigs</span>
+              <span className="legend-color" style={{ backgroundColor: colors.warning }}></span>
+              <span className="legend-label">Pigs</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: solid }}></span>
-              <span>Poultry</span>
+              <span className="legend-color" style={{ backgroundColor: colors.error }}></span>
+              <span className="legend-label">Poultry</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color" style={{ backgroundColor: ahdbText }}></span>
-              <span>Other</span>
+              <span className="legend-color" style={{ backgroundColor: colors.textMedium }}></span>
+              <span className="legend-label">Other</span>
             </div>
           </div>
         </div>
@@ -227,5 +275,16 @@ const Map = () => {
     </div>
   );
 };
+
+// Helper function to get species color
+function getSpeciesColor(species) {
+  switch(species) {
+    case 'Cattle': return colors.secondary;
+    case 'Sheep': return colors.primary;
+    case 'Pigs': return colors.warning;
+    case 'Poultry': return colors.error;
+    default: return colors.textMedium;
+  }
+}
 
 export default Map;
