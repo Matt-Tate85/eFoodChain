@@ -5,6 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
 import sampleLocations from '../data/locations';
+// Fix Leaflet icon issues
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 // AHDB Color Palette
 const colors = {
@@ -20,10 +23,6 @@ const colors = {
   error: "#7b3010",
   info: "#00abe4"
 };
-
-// Fix Leaflet icon issues
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
   iconUrl: icon,
