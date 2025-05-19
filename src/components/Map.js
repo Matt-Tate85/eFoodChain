@@ -1,21 +1,19 @@
-// Import everything at the top to satisfy ESLint
+// Map.js for react-leaflet v3.1.0 and leaflet 1.7.1
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
 import Papa from 'papaparse';
-import LocationFilter from './LocationFilter';
 import 'leaflet/dist/leaflet.css';
+import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
 
-// Create GLOBAL default icon instance to avoid internal Leaflet icon mechanisms entirely
-const DEFAULT_ICON = new L.Icon({
+// Fix Leaflet's default icon issue - specifically for react-leaflet v3.1.0
+// This must go before any components using Leaflet are rendered
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
 });
 
 // AHDB Color Palette
@@ -202,7 +200,7 @@ const batchGeocodePostcodes = async (postcodes) => {
   return results;
 };
 
-// Map Filter Control Component
+// Map Filter Control Component - API is different in react-leaflet v3.1.0
 function MapController({ filteredLocations, center }) {
   const map = useMap();
   
@@ -239,21 +237,6 @@ const Map = ({ onMapLoaded }) => {
   const [error, setError] = useState(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapRef = useRef(null);
-
-  // Handle on load callback
-  const handleMapLoaded = () => {
-    console.log('Map is loaded and ready');
-    setMapInitialized(true);
-    
-    if (onMapLoaded) {
-      setTimeout(() => {
-        setLoading(false);
-        onMapLoaded();
-      }, 500); // Small delay to ensure map tiles are loaded
-    } else {
-      setLoading(false);
-    }
-  };
 
   // Format address from components
   const formatAddress = (row) => {
@@ -551,6 +534,22 @@ const Map = ({ onMapLoaded }) => {
     }
   }, []);
 
+  // Handle map initialization
+  const handleMapCreated = (map) => {
+    console.log('Map created');
+    mapRef.current = map;
+    setMapInitialized(true);
+    
+    if (onMapLoaded) {
+      setTimeout(() => {
+        setLoading(false);
+        onMapLoaded();
+      }, 500);
+    } else {
+      setLoading(false);
+    }
+  };
+
   // If there was an error loading the data
   if (error) {
     return (
@@ -640,13 +639,12 @@ const Map = ({ onMapLoaded }) => {
           
           <MapContainer 
             key="main-map"
-            ref={mapRef}
             center={UK_CENTER} 
             zoom={6} 
             style={{ height: '100%', width: '100%' }}
             zoomControl={true}
             scrollWheelZoom={true}
-            whenReady={handleMapLoaded}
+            whenCreated={handleMapCreated}
             className={loading ? 'map-loading-state' : ''}
           >
             <TileLayer
@@ -659,8 +657,6 @@ const Map = ({ onMapLoaded }) => {
                 key={location.id}
                 position={[location.lat, location.lng]}
                 icon={getIconForSpecies(location.primarySpecies)}
-                // Use DEFAULT_ICON as a fallback to avoid internal Leaflet icon handling
-                // icon={DEFAULT_ICON}
               >
                 <Popup className="custom-popup">
                   <div className="marker-info">
