@@ -6,15 +6,6 @@ import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
 
-// Properly import Leaflet icon images
-// Use direct paths instead of import statements for the images
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default,
-  iconUrl: require('leaflet/dist/images/marker-icon.png').default,
-  shadowUrl: require('leaflet/dist/images/marker-shadow.png').default,
-});
-
 // AHDB Color Palette
 const colors = {
   primary: "#0090d4",
@@ -46,7 +37,18 @@ const UK_CENTER = [54.7023545, -3.2765753];
 // Postcode Cache
 const postcodeCache = new Map();
 
-// Custom icons for different species - defined after L is fully initialized
+// Define default marker icon using CDN URLs to avoid initialization issues
+const defaultMarkerIcon = new L.Icon({
+  iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Custom icons for different species
 const createCustomIcon = (color) => {
   return L.divIcon({
     className: 'custom-icon',
@@ -514,6 +516,49 @@ const Map = ({ onMapLoaded }) => {
       </div>
     );
   }
+
+  // Create a minimal CSS block for map loading styles if needed
+  useEffect(() => {
+    // Only add if it doesn't exist already
+    if (!document.getElementById('map-loading-styles')) {
+      const style = document.createElement('style');
+      style.id = 'map-loading-styles';
+      style.innerHTML = `
+        .map-loading {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(255, 255, 255, 0.8);
+          z-index: 1000;
+        }
+        .spinner {
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #0090d4;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+          margin-bottom: 15px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .map-wrapper {
+          position: relative;
+          height: 600px;
+          width: 100%;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   return (
     <div className="map-container">
