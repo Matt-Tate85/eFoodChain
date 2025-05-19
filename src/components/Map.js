@@ -7,21 +7,16 @@ import LocationFilter from './LocationFilter';
 import 'leaflet/dist/leaflet.css';
 import '../styles/components/Map.css';
 
-// Fix Leaflet icon issues before using any react-leaflet components
-// This is executed at module initialization time, before any components render
-(function setupLeaflet() {
-  // Use inline _getIconUrl override instead of deleting it
-  L.Icon.Default.prototype._getIconUrl = function (name) {
-    if (name === 'iconUrl') {
-      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png';
-    } else if (name === 'iconRetinaUrl') {
-      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png';
-    } else if (name === 'shadowUrl') {
-      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png';
-    }
-    return '';
-  };
-})();
+// Create GLOBAL default icon instance to avoid internal Leaflet icon mechanisms entirely
+const DEFAULT_ICON = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 // AHDB Color Palette
 const colors = {
@@ -664,6 +659,8 @@ const Map = ({ onMapLoaded }) => {
                 key={location.id}
                 position={[location.lat, location.lng]}
                 icon={getIconForSpecies(location.primarySpecies)}
+                // Use DEFAULT_ICON as a fallback to avoid internal Leaflet icon handling
+                // icon={DEFAULT_ICON}
               >
                 <Popup className="custom-popup">
                   <div className="marker-info">
