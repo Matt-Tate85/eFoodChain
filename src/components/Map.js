@@ -174,7 +174,7 @@ const Map = ({ onMapLoaded }) => {
   useEffect(() => {
     const fetchCSVData = async () => {
       try {
-        const response = await fetch('ApprovedEstablishments01052025.csv');
+        const response = await fetch('ApprovedEstablishments.csv');
         const csvText = await response.text();
         
         Papa.parse(csvText, {
