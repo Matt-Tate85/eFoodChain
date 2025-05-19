@@ -1,22 +1,27 @@
-// Fix Leaflet initialization errors first
+// Map.js with minimal approach to fix icon initialization
+
+// Import React first
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+// Then import leaflet - BUT NOT react-leaflet yet!
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix for Leaflet icon issues - must run before any Leaflet component code
-(function fixLeafletIcon() {
-  // Fix the 'W' before initialization error
-  delete L.Icon.Default.prototype._getIconUrl;
-  
-  // Set icon paths to CDN URLs
-  L.Icon.Default.mergeOptions({
+// Fix the Leaflet icon issues with a direct approach
+// This must happen before importing any react-leaflet components
+L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.7.1/dist/images/';
+
+// Override the Icon.Default._getIconUrl method which causes the 'W' error
+L.Icon.Default.prototype._getIconUrl = function (name) {
+  const paths = {
     iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
     iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  });
-})();
+    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png'
+  };
+  return paths[name];
+};
 
-// Regular imports after the fix
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+// Now import react-leaflet components after fixing Leaflet
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import Papa from 'papaparse';
 import LocationFilter from './LocationFilter';
