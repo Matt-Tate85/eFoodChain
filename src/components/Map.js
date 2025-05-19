@@ -34,7 +34,11 @@ const speciesColors = {
   Lagomorphs: colors.textMedium
 };
 
-let DefaultIcon = L.icon({
+// UK center point for fallback
+const UK_CENTER = [54.7023545, -3.2765753];
+
+// Setup default icon before any other code uses it
+const DefaultIcon = L.icon({
   iconUrl: icon,
   shadowUrl: iconShadow,
   iconSize: [25, 41],
@@ -42,6 +46,9 @@ let DefaultIcon = L.icon({
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
+
+// Postcode Cache - moved before any function that might use it
+const postcodeCache = new Map();
 
 // Custom icons for different species
 const createCustomIcon = (color) => {
@@ -61,12 +68,6 @@ const createCustomIcon = (color) => {
     popupAnchor: [0, -24]
   });
 };
-
-// UK center point for fallback
-const UK_CENTER = [54.7023545, -3.2765753];
-
-// Postcode Cache
-const postcodeCache = new Map();
 
 /**
  * Geocode a UK postcode to latitude/longitude coordinates
@@ -231,8 +232,11 @@ const Map = ({ onMapLoaded }) => {
   const handleMapLoaded = () => {
     if (onMapLoaded) {
       setTimeout(() => {
+        setLoading(false);
         onMapLoaded();
       }, 500); // Small delay to ensure map tiles are loaded
+    } else {
+      setLoading(false);
     }
   };
 
