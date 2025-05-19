@@ -1,31 +1,27 @@
-// Map.js with minimal approach to fix icon initialization
-
-// Import React first
+// Import everything at the top to satisfy ESLint
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-
-// Then import leaflet - BUT NOT react-leaflet yet!
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix the Leaflet icon issues with a direct approach
-// This must happen before importing any react-leaflet components
-L.Icon.Default.imagePath = 'https://unpkg.com/leaflet@1.7.1/dist/images/';
-
-// Override the Icon.Default._getIconUrl method which causes the 'W' error
-L.Icon.Default.prototype._getIconUrl = function (name) {
-  const paths = {
-    iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png'
-  };
-  return paths[name];
-};
-
-// Now import react-leaflet components after fixing Leaflet
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import Papa from 'papaparse';
 import LocationFilter from './LocationFilter';
+import 'leaflet/dist/leaflet.css';
 import '../styles/components/Map.css';
+
+// Fix Leaflet icon issues before using any react-leaflet components
+// This is executed at module initialization time, before any components render
+(function setupLeaflet() {
+  // Use inline _getIconUrl override instead of deleting it
+  L.Icon.Default.prototype._getIconUrl = function (name) {
+    if (name === 'iconUrl') {
+      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png';
+    } else if (name === 'iconRetinaUrl') {
+      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png';
+    } else if (name === 'shadowUrl') {
+      return 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png';
+    }
+    return '';
+  };
+})();
 
 // AHDB Color Palette
 const colors = {
