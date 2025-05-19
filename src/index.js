@@ -1,3 +1,9 @@
+// src/index.js
+
+// Import the leafletSetup first, before any other imports
+import './components/leafletSetup';
+
+// Then your regular imports
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/global.css';
