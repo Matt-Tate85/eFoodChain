@@ -246,3 +246,109 @@
 .leaflet-bottom {
   z-index: 999 !important;
 }
+
+/* Additional styles for advanced filters and species badges */
+
+.advanced-filter-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  background-color: white;
+  border: 1px solid var(--ahdb-border);
+  border-radius: 6px;
+  color: var(--ahdb-primary);
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.advanced-filter-toggle:hover {
+  background-color: rgba(0, 144, 212, 0.05);
+  border-color: var(--ahdb-primary);
+}
+
+.toggle-arrow {
+  margin-left: 8px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.advanced-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+  width: 100%;
+}
+
+.filter-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+  width: 100%;
+  font-size: 0.9rem;
+  color: var(--ahdb-text-medium);
+}
+
+.result-count {
+  font-weight: 500;
+}
+
+/* Species badges styles */
+.species-tags, .type-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.species-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: var(--ahdb-text-dark);
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Make the Popup scrollable if it gets too big */
+.custom-popup .leaflet-popup-content {
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .advanced-filters {
+    flex-direction: column;
+  }
+  
+  .filter-summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}
