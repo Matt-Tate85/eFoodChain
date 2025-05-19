@@ -1,10 +1,13 @@
+// src/components/Map.js
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
 import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
+
+// Import the helper functions from leafletSetup.js
+import { createMarkerIcon, createCustomDivIcon } from './leafletSetup';
 
 // AHDB Color Palette
 const colors = {
@@ -36,36 +39,6 @@ const UK_CENTER = [54.7023545, -3.2765753];
 
 // Postcode Cache
 const postcodeCache = new Map();
-
-// Define default marker icon using CDN URLs to avoid initialization issues
-const defaultMarkerIcon = new L.Icon({
-  iconUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://cdn.jsdelivr.net/npm/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Custom icons for different species
-const createCustomIcon = (color) => {
-  return L.divIcon({
-    className: 'custom-icon',
-    html: `<div style="
-      background-color: ${color};
-      width: 24px;
-      height: 24px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      border: 2px solid white;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-    "></div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 24],
-    popupAnchor: [0, -24]
-  });
-};
 
 /**
  * Geocode a UK postcode to latitude/longitude coordinates
@@ -201,16 +174,37 @@ const batchGeocodePostcodes = async (postcodes) => {
   return results;
 };
 
-// Map Filter Control Component
+// Map Filter Control Component - MODIFIED to fix bounds issue
 function MapController({ filteredLocations, center }) {
   const map = useMap();
   
   useEffect(() => {
+    if (!map) return;
+    
     if (filteredLocations && filteredLocations.length > 0) {
       try {
-        // Create bounds including all markers
-        const bounds = L.latLngBounds(filteredLocations.map(location => [location.lat, location.lng]));
-        map.fitBounds(bounds, { padding: [50, 50] });
+        // Create bounds from array of points
+        const points = filteredLocations.map(location => [location.lat, location.lng]);
+        
+        // Check if points are valid
+        const validPoints = points.filter(point => 
+          Array.isArray(point) && 
+          point.length === 2 && 
+          !isNaN(point[0]) && 
+          !isNaN(point[1])
+        );
+        
+        if (validPoints.length > 0) {
+          // Create a bounds object
+          const bounds = validPoints.reduce((bounds, point) => {
+            return bounds.extend(point);
+          }, map.getBounds());
+          
+          // Fit the map to these bounds
+          map.fitBounds(bounds, { padding: [50, 50] });
+        } else {
+          map.setView(center, 6);
+        }
       } catch (error) {
         console.error('Error fitting bounds:', error);
         // Fallback to center view
@@ -236,10 +230,57 @@ const Map = ({ onMapLoaded }) => {
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [error, setError] = useState(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const mapRef = useRef(null);
+
+  // Add the CSS for the map container and other elements
+  useEffect(() => {
+    // Only add if it doesn't exist already
+    if (!document.getElementById('map-loading-styles')) {
+      const style = document.createElement('style');
+      style.id = 'map-loading-styles';
+      style.innerHTML = `
+        .map-loading {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: rgba(255, 255, 255, 0.8);
+          z-index: 1000;
+        }
+        .spinner {
+          border: 5px solid #f3f3f3;
+          border-top: 5px solid #0090d4;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          animation: spin 1s linear infinite;
+          margin-bottom: 15px;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .map-wrapper {
+          position: relative;
+          height: 600px;
+          width: 100%;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
 
   // Handle on load callback
   const handleMapLoaded = () => {
+    console.log('Map is loaded and ready');
+    setMapInitialized(true);
+    
     if (onMapLoaded) {
       setTimeout(() => {
         setLoading(false);
@@ -485,9 +526,9 @@ const Map = ({ onMapLoaded }) => {
     locations.map(location => location.geographicAuthority).filter(Boolean)
   )].sort();
 
-  // Get icon for species
+  // Get icon for species - uses createCustomDivIcon from leafletSetup.js
   const getIconForSpecies = (species) => {
-    return createCustomIcon(speciesColors[species] || colors.textMedium);
+    return createCustomDivIcon(speciesColors[species] || colors.textMedium);
   };
 
   // Toggle advanced filters
@@ -516,49 +557,6 @@ const Map = ({ onMapLoaded }) => {
       </div>
     );
   }
-
-  // Create a minimal CSS block for map loading styles if needed
-  useEffect(() => {
-    // Only add if it doesn't exist already
-    if (!document.getElementById('map-loading-styles')) {
-      const style = document.createElement('style');
-      style.id = 'map-loading-styles';
-      style.innerHTML = `
-        .map-loading {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          background-color: rgba(255, 255, 255, 0.8);
-          z-index: 1000;
-        }
-        .spinner {
-          border: 5px solid #f3f3f3;
-          border-top: 5px solid #0090d4;
-          border-radius: 50%;
-          width: 50px;
-          height: 50px;
-          animation: spin 1s linear infinite;
-          margin-bottom: 15px;
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .map-wrapper {
-          position: relative;
-          height: 600px;
-          width: 100%;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }, []);
 
   return (
     <div className="map-container">
@@ -633,7 +631,9 @@ const Map = ({ onMapLoaded }) => {
             </div>
           )}
           
+          {/* KEY CHANGE: Use key="map" to force re-rendering if needed */}
           <MapContainer 
+            key="map"
             ref={mapRef}
             center={UK_CENTER} 
             zoom={6} 
@@ -648,7 +648,8 @@ const Map = ({ onMapLoaded }) => {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
-            {filteredLocations().map(location => (
+            {/* KEY CHANGE: Only render markers after map is initialized */}
+            {mapInitialized && filteredLocations().map(location => (
               <Marker
                 key={location.id}
                 position={[location.lat, location.lng]}
@@ -702,10 +703,13 @@ const Map = ({ onMapLoaded }) => {
               </Marker>
             ))}
             
-            <MapController 
-              filteredLocations={filteredLocations()} 
-              center={UK_CENTER} 
-            />
+            {/* KEY CHANGE: Only add MapController after map is initialized */}
+            {mapInitialized && (
+              <MapController 
+                filteredLocations={filteredLocations()} 
+                center={UK_CENTER} 
+              />
+            )}
           </MapContainer>
         </div>
         
