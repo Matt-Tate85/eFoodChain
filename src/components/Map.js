@@ -5,9 +5,15 @@ import Papa from 'papaparse';
 import 'leaflet/dist/leaflet.css';
 import LocationFilter from './LocationFilter';
 import '../styles/components/Map.css';
-// Fix Leaflet icon issues
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+// Properly import Leaflet icon images
+// Use direct paths instead of import statements for the images
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: require('leaflet/dist/images/marker-icon-2x.png').default,
+  iconUrl: require('leaflet/dist/images/marker-icon.png').default,
+  shadowUrl: require('leaflet/dist/images/marker-shadow.png').default,
+});
 
 // AHDB Color Palette
 const colors = {
@@ -37,20 +43,10 @@ const speciesColors = {
 // UK center point for fallback
 const UK_CENTER = [54.7023545, -3.2765753];
 
-// Setup default icon before any other code uses it
-const DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41]
-});
-
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Postcode Cache - moved before any function that might use it
+// Postcode Cache
 const postcodeCache = new Map();
 
-// Custom icons for different species
+// Custom icons for different species - defined after L is fully initialized
 const createCustomIcon = (color) => {
   return L.divIcon({
     className: 'custom-icon',
@@ -119,6 +115,11 @@ const geocodePostcode = async (postcode) => {
  * @returns {Promise<Map<string, {lat: number, lng: number}>>}
  */
 const batchGeocodePostcodes = async (postcodes) => {
+  // Handle empty input
+  if (!postcodes || postcodes.length === 0) {
+    return new Map();
+  }
+  
   // Remove duplicates and empty values
   const uniquePostcodes = [...new Set(postcodes.filter(Boolean))];
   
@@ -204,9 +205,15 @@ function MapController({ filteredLocations, center }) {
   
   useEffect(() => {
     if (filteredLocations && filteredLocations.length > 0) {
-      // Create bounds including all markers
-      const bounds = L.latLngBounds(filteredLocations.map(location => [location.lat, location.lng]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+      try {
+        // Create bounds including all markers
+        const bounds = L.latLngBounds(filteredLocations.map(location => [location.lat, location.lng]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      } catch (error) {
+        console.error('Error fitting bounds:', error);
+        // Fallback to center view
+        map.setView(center, 6);
+      }
     } else {
       // Reset to default view if no markers
       map.setView(center, 6);
@@ -226,6 +233,7 @@ const Map = ({ onMapLoaded }) => {
     geographicAuthorities: []
   });
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [error, setError] = useState(null);
   const mapRef = useRef(null);
 
   // Handle on load callback
@@ -289,112 +297,141 @@ const Map = ({ onMapLoaded }) => {
 
   // Process location data with postcodes
   const processLocationData = async (csvData) => {
-    // Extract records with postcodes
-    const validRecords = csvData
-      .filter(row => row.Postcode || (row.X && row.Y))
-      .map((row, index) => ({
-        ...row,
-        id: row.AppNo || `location-${index}`,
-        tradingName: row.TradingName || 'Unnamed Location',
-        address: formatAddress(row),
-        primarySpecies: getPrimarySpecies(row),
-        allSpecies: getAllSpecies(row),
-        establishmentTypes: getEstablishmentTypes(row),
-        geographicAuthority: row.GeographicLocalAuthority,
-        country: row.Country
-      }));
-    
-    setGeocodingProgress({ current: 0, total: validRecords.length });
-    
-    // Extract postcodes for geocoding
-    const postcodes = validRecords
-      .filter(row => row.Postcode)
-      .map(row => row.Postcode);
-    
-    // Batch geocode all postcodes
-    const geocodedPostcodes = await batchGeocodePostcodes(postcodes);
-    
-    // Process in batches to avoid UI blocking
-    const batchSize = 100;
-    const totalBatches = Math.ceil(validRecords.length / batchSize);
-    
-    const processedLocations = [];
-    
-    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-      const startIndex = batchIndex * batchSize;
-      const endIndex = Math.min(startIndex + batchSize, validRecords.length);
-      const batch = validRecords.slice(startIndex, endIndex);
+    try {
+      // Ensure csvData is valid
+      if (!csvData || !Array.isArray(csvData)) {
+        throw new Error('Invalid CSV data structure');
+      }
       
-      const batchPromises = batch.map(async (record) => {
-        let lat, lng;
+      console.log('Processing CSV data:', csvData.length, 'rows');
+      
+      // Extract records with postcodes or coordinates
+      const validRecords = csvData
+        .filter(row => row && (row.Postcode || (row.X && row.Y)))
+        .map((row, index) => ({
+          ...row,
+          id: row.AppNo || `location-${index}`,
+          tradingName: row.TradingName || 'Unnamed Location',
+          address: formatAddress(row),
+          primarySpecies: getPrimarySpecies(row),
+          allSpecies: getAllSpecies(row),
+          establishmentTypes: getEstablishmentTypes(row),
+          geographicAuthority: row.GeographicLocalAuthority,
+          country: row.Country
+        }));
+      
+      console.log('Valid records found:', validRecords.length);
+      setGeocodingProgress({ current: 0, total: validRecords.length });
+      
+      // Extract postcodes for geocoding
+      const postcodes = validRecords
+        .filter(row => row.Postcode)
+        .map(row => row.Postcode);
+      
+      console.log('Postcodes to geocode:', postcodes.length);
+      
+      // Batch geocode all postcodes
+      const geocodedPostcodes = await batchGeocodePostcodes(postcodes);
+      console.log('Geocoded postcodes:', geocodedPostcodes.size);
+      
+      // Process in batches to avoid UI blocking
+      const batchSize = 100;
+      const totalBatches = Math.ceil(validRecords.length / batchSize);
+      
+      const processedLocations = [];
+      
+      for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+        const startIndex = batchIndex * batchSize;
+        const endIndex = Math.min(startIndex + batchSize, validRecords.length);
+        const batch = validRecords.slice(startIndex, endIndex);
         
-        // Try postcode first
-        if (record.Postcode && geocodedPostcodes.has(record.Postcode)) {
-          const geocoded = geocodedPostcodes.get(record.Postcode);
-          lat = geocoded.lat;
-          lng = geocoded.lng;
-        } 
-        // Fallback: try to see if X/Y are already lat/lng
-        else if (record.X && record.Y) {
-          const x = parseFloat(record.X);
-          const y = parseFloat(record.Y);
-          if (x >= -10 && x <= 2 && y >= 49 && y <= 61) {
-            lat = y;
-            lng = x;
+        const batchPromises = batch.map(async (record) => {
+          let lat, lng;
+          
+          // Try postcode first
+          if (record.Postcode && geocodedPostcodes.has(record.Postcode)) {
+            const geocoded = geocodedPostcodes.get(record.Postcode);
+            lat = geocoded.lat;
+            lng = geocoded.lng;
+          } 
+          // Fallback: try to see if X/Y are already lat/lng
+          else if (record.X && record.Y) {
+            const x = parseFloat(record.X);
+            const y = parseFloat(record.Y);
+            if (x >= -10 && x <= 2 && y >= 49 && y <= 61) {
+              lat = y;
+              lng = x;
+            } else {
+              // Last resort: use UK center
+              lat = UK_CENTER[0];
+              lng = UK_CENTER[1];
+            }
           } else {
-            // Last resort: use UK center
+            // Default fallback
             lat = UK_CENTER[0];
             lng = UK_CENTER[1];
           }
-        } else {
-          // Default fallback
-          lat = UK_CENTER[0];
-          lng = UK_CENTER[1];
-        }
+          
+          return {
+            ...record,
+            lat,
+            lng
+          };
+        });
         
-        return {
-          ...record,
-          lat,
-          lng
-        };
-      });
+        const batchResults = await Promise.all(batchPromises);
+        processedLocations.push(...batchResults);
+        
+        setGeocodingProgress({
+          current: Math.min(endIndex, validRecords.length),
+          total: validRecords.length
+        });
+        
+        // Small delay to allow UI updates
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
       
-      const batchResults = await Promise.all(batchPromises);
-      processedLocations.push(...batchResults);
+      console.log('Processed locations:', processedLocations.length);
+      setLocations(processedLocations);
+      setLoading(false);
       
-      setGeocodingProgress({
-        current: Math.min(endIndex, validRecords.length),
-        total: validRecords.length
-      });
-      
-      // Small delay to allow UI updates
-      await new Promise(resolve => setTimeout(resolve, 10));
+    } catch (error) {
+      console.error('Error processing location data:', error);
+      setError('Failed to process location data: ' + error.message);
+      setLoading(false);
     }
-    
-    setLocations(processedLocations);
-    setLoading(false);
   };
 
   // Fetch locations data from CSV
   useEffect(() => {
     const fetchCSVData = async () => {
       try {
+        console.log('Fetching CSV data...');
         const response = await fetch('ApprovedEstablishments.csv');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+        }
+        
         const csvText = await response.text();
+        console.log('CSV data received, length:', csvText.length);
         
         Papa.parse(csvText, {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
+            console.log('Papa parse complete, rows:', results.data.length);
             processLocationData(results.data);
           },
           error: (error) => {
             console.error('Error parsing CSV:', error);
+            setError('Failed to parse CSV data: ' + error);
             setLoading(false);
           }
         });
       } catch (error) {
         console.error('Error fetching CSV:', error);
+        setError('Failed to fetch CSV data: ' + error.message);
         setLoading(false);
       }
     };
@@ -463,6 +500,20 @@ const Map = ({ onMapLoaded }) => {
     }
     return 'Loading map...';
   };
+
+  // If there was an error loading the data
+  if (error) {
+    return (
+      <div className="map-container">
+        <h2 className="section-title">AHDB eFoodChain Map</h2>
+        <div className="map-error">
+          <h3>Error Loading Map</h3>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Retry</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="map-container">
