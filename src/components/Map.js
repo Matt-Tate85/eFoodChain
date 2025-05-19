@@ -62,8 +62,140 @@ const createCustomIcon = (color) => {
   });
 };
 
-// UK center point
-const defaultCenter = [54.7023545, -3.2765753];
+// UK center point for fallback
+const UK_CENTER = [54.7023545, -3.2765753];
+
+// Postcode Cache
+const postcodeCache = new Map();
+
+/**
+ * Geocode a UK postcode to latitude/longitude coordinates
+ * @param {string} postcode - UK postcode 
+ * @returns {Promise<{lat: number, lng: number} | null>}
+ */
+const geocodePostcode = async (postcode) => {
+  if (!postcode) return null;
+  
+  // Normalize postcode
+  const normalizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
+  
+  // Check cache first
+  if (postcodeCache.has(normalizedPostcode)) {
+    return postcodeCache.get(normalizedPostcode);
+  }
+  
+  try {
+    const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(normalizedPostcode)}`);
+    
+    if (!response.ok) {
+      console.warn(`Geocoding failed for postcode: ${postcode} with status: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (data.status === 200 && data.result) {
+      const result = {
+        lat: data.result.latitude,
+        lng: data.result.longitude
+      };
+      
+      // Add to cache
+      postcodeCache.set(normalizedPostcode, result);
+      return result;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Error geocoding postcode ${postcode}:`, error);
+    return null;
+  }
+};
+
+/**
+ * Batch geocode multiple postcodes
+ * @param {string[]} postcodes - Array of postcodes
+ * @returns {Promise<Map<string, {lat: number, lng: number}>>}
+ */
+const batchGeocodePostcodes = async (postcodes) => {
+  // Remove duplicates and empty values
+  const uniquePostcodes = [...new Set(postcodes.filter(Boolean))];
+  
+  // Filter out postcodes we already have in cache
+  const postcodesToFetch = uniquePostcodes.filter(
+    postcode => !postcodeCache.has(postcode.replace(/\s+/g, '').toUpperCase())
+  );
+  
+  if (postcodesToFetch.length === 0) {
+    // All postcodes are in cache, return cached results
+    const results = new Map();
+    uniquePostcodes.forEach(postcode => {
+      const normalizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
+      if (postcodeCache.has(normalizedPostcode)) {
+        results.set(postcode, postcodeCache.get(normalizedPostcode));
+      }
+    });
+    return results;
+  }
+  
+  // Split into chunks of 100 (API limit)
+  const chunks = [];
+  for (let i = 0; i < postcodesToFetch.length; i += 100) {
+    chunks.push(postcodesToFetch.slice(i, i + 100));
+  }
+  
+  const results = new Map();
+  
+  // Process each chunk
+  for (const chunk of chunks) {
+    try {
+      const response = await fetch('https://api.postcodes.io/postcodes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ postcodes: chunk })
+      });
+      
+      if (!response.ok) {
+        console.warn(`Bulk geocoding failed with status: ${response.status}`);
+        continue;
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 200 && data.result) {
+        data.result.forEach(item => {
+          if (item.result) {
+            const coordinates = {
+              lat: item.result.latitude,
+              lng: item.result.longitude
+            };
+            
+            // Add to results and cache
+            const normalizedPostcode = item.query.replace(/\s+/g, '').toUpperCase();
+            results.set(item.query, coordinates);
+            postcodeCache.set(normalizedPostcode, coordinates);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error in bulk geocoding:', error);
+    }
+  }
+  
+  // Add cached results for postcodes not in this batch
+  uniquePostcodes.forEach(postcode => {
+    if (!results.has(postcode)) {
+      const normalizedPostcode = postcode.replace(/\s+/g, '').toUpperCase();
+      if (postcodeCache.has(normalizedPostcode)) {
+        results.set(postcode, postcodeCache.get(normalizedPostcode));
+      }
+    }
+  });
+  
+  return results;
+};
 
 // Map Filter Control Component
 function MapController({ filteredLocations, center }) {
@@ -86,6 +218,7 @@ function MapController({ filteredLocations, center }) {
 const Map = ({ onMapLoaded }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0 });
   const [activeFilters, setActiveFilters] = useState({
     species: [],
     establishmentTypes: [],
@@ -98,29 +231,9 @@ const Map = ({ onMapLoaded }) => {
   const handleMapLoaded = () => {
     if (onMapLoaded) {
       setTimeout(() => {
-        setLoading(false);
         onMapLoaded();
       }, 500); // Small delay to ensure map tiles are loaded
-    } else {
-      setLoading(false);
     }
-  };
-
-  // Helper function to convert OS Grid Reference to Lat/Lng
-  // This is a very simplified version - in production you'd want to use a proper library
-  const convertOsGridToLatLng = (x, y) => {
-    // This is a placeholder - in reality you'd use a proper conversion
-    // For now, if the data looks like it might be lat/lng already, we'll use it as is
-    if (x > -10 && x < 10 && y > 45 && y < 65) {
-      return [y, x]; // Might already be lat/lng
-    }
-    
-    // Here we'd normally use a proper transformation
-    // For testing, let's just return a reasonable value in the UK
-    return [
-      51.5074 + (Math.random() - 0.5) * 10, // London +/- 5 degrees
-      -0.1278 + (Math.random() - 0.5) * 10
-    ];
   };
 
   // Format address from components
@@ -170,6 +283,94 @@ const Map = ({ onMapLoaded }) => {
     );
   };
 
+  // Process location data with postcodes
+  const processLocationData = async (csvData) => {
+    // Extract records with postcodes
+    const validRecords = csvData
+      .filter(row => row.Postcode || (row.X && row.Y))
+      .map((row, index) => ({
+        ...row,
+        id: row.AppNo || `location-${index}`,
+        tradingName: row.TradingName || 'Unnamed Location',
+        address: formatAddress(row),
+        primarySpecies: getPrimarySpecies(row),
+        allSpecies: getAllSpecies(row),
+        establishmentTypes: getEstablishmentTypes(row),
+        geographicAuthority: row.GeographicLocalAuthority,
+        country: row.Country
+      }));
+    
+    setGeocodingProgress({ current: 0, total: validRecords.length });
+    
+    // Extract postcodes for geocoding
+    const postcodes = validRecords
+      .filter(row => row.Postcode)
+      .map(row => row.Postcode);
+    
+    // Batch geocode all postcodes
+    const geocodedPostcodes = await batchGeocodePostcodes(postcodes);
+    
+    // Process in batches to avoid UI blocking
+    const batchSize = 100;
+    const totalBatches = Math.ceil(validRecords.length / batchSize);
+    
+    const processedLocations = [];
+    
+    for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+      const startIndex = batchIndex * batchSize;
+      const endIndex = Math.min(startIndex + batchSize, validRecords.length);
+      const batch = validRecords.slice(startIndex, endIndex);
+      
+      const batchPromises = batch.map(async (record) => {
+        let lat, lng;
+        
+        // Try postcode first
+        if (record.Postcode && geocodedPostcodes.has(record.Postcode)) {
+          const geocoded = geocodedPostcodes.get(record.Postcode);
+          lat = geocoded.lat;
+          lng = geocoded.lng;
+        } 
+        // Fallback: try to see if X/Y are already lat/lng
+        else if (record.X && record.Y) {
+          const x = parseFloat(record.X);
+          const y = parseFloat(record.Y);
+          if (x >= -10 && x <= 2 && y >= 49 && y <= 61) {
+            lat = y;
+            lng = x;
+          } else {
+            // Last resort: use UK center
+            lat = UK_CENTER[0];
+            lng = UK_CENTER[1];
+          }
+        } else {
+          // Default fallback
+          lat = UK_CENTER[0];
+          lng = UK_CENTER[1];
+        }
+        
+        return {
+          ...record,
+          lat,
+          lng
+        };
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      processedLocations.push(...batchResults);
+      
+      setGeocodingProgress({
+        current: Math.min(endIndex, validRecords.length),
+        total: validRecords.length
+      });
+      
+      // Small delay to allow UI updates
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+    
+    setLocations(processedLocations);
+    setLoading(false);
+  };
+
   // Fetch locations data from CSV
   useEffect(() => {
     const fetchCSVData = async () => {
@@ -181,30 +382,7 @@ const Map = ({ onMapLoaded }) => {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const formattedLocations = results.data
-              .filter(row => row.X && row.Y && !isNaN(parseFloat(row.X)) && !isNaN(parseFloat(row.Y)))
-              .map((row, index) => {
-                const [lat, lng] = convertOsGridToLatLng(parseFloat(row.X), parseFloat(row.Y));
-                const primarySpecies = getPrimarySpecies(row);
-                
-                return {
-                  id: row.AppNo || `location-${index}`,
-                  tradingName: row.TradingName || 'Unnamed Location',
-                  address: formatAddress(row),
-                  lat,
-                  lng,
-                  appNumber: row.AppNo,
-                  primarySpecies,
-                  allSpecies: getAllSpecies(row),
-                  establishmentTypes: getEstablishmentTypes(row),
-                  geographicAuthority: row.GeographicLocalAuthority,
-                  country: row.Country,
-                  rawData: row // Keep raw data for advanced filtering
-                };
-              });
-            
-            setLocations(formattedLocations);
-            setLoading(false);
+            processLocationData(results.data);
           },
           error: (error) => {
             console.error('Error parsing CSV:', error);
@@ -272,6 +450,14 @@ const Map = ({ onMapLoaded }) => {
   // Toggle advanced filters
   const toggleAdvancedFilters = () => {
     setShowAdvancedFilters(!showAdvancedFilters);
+  };
+
+  const getLoadingMessage = () => {
+    if (geocodingProgress.current > 0 && geocodingProgress.total > 0) {
+      const percentage = Math.round((geocodingProgress.current / geocodingProgress.total) * 100);
+      return `Geocoding locations: ${percentage}% (${geocodingProgress.current}/${geocodingProgress.total})`;
+    }
+    return 'Loading map...';
   };
 
   return (
@@ -343,13 +529,13 @@ const Map = ({ onMapLoaded }) => {
           {loading && (
             <div className="map-loading">
               <div className="spinner"></div>
-              <p>Loading map...</p>
+              <p>{getLoadingMessage()}</p>
             </div>
           )}
           
           <MapContainer 
             ref={mapRef}
-            center={defaultCenter} 
+            center={UK_CENTER} 
             zoom={6} 
             style={{ height: '100%', width: '100%' }}
             zoomControl={true}
@@ -418,7 +604,7 @@ const Map = ({ onMapLoaded }) => {
             
             <MapController 
               filteredLocations={filteredLocations()} 
-              center={defaultCenter} 
+              center={UK_CENTER} 
             />
           </MapContainer>
         </div>
